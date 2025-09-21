@@ -69,6 +69,24 @@ sbatch --export=ALL,WRT_SEED=tr3000 ./immortalwrt-build-task.sbatch
 sbatch --export=ALL,WRT_CONFIG=/path/to/.config ./immortalwrt-build-task.sbatch
 ```
 
+### Set Build Threads
+
+By default the build uses 4 threads:
+
+```bash
+sbatch ./immortalwrt-build-task.sbatch
+```
+
+Override the number of threads with `BUILD_THREADS`:
+
+```bash
+BUILD_THREADS=12 sbatch ./immortalwrt-build-task.sbatch
+# or equivalently
+sbatch --export=ALL,BUILD_THREADS=12 ./immortalwrt-build-task.sbatch
+```
+
+This controls the parallelism of the build (`make -j${BUILD_THREADS}` inside the container).
+
 ### Interactive Configuration
 
 Run menuconfig inside the container:
