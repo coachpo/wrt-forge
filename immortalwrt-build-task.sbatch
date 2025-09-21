@@ -33,6 +33,7 @@ GIT_REF="${GIT_REF:-main}"
 GIT_DEPTH="${GIT_DEPTH:-1}"
 WRT_SEED="${WRT_SEED:-cr6606}"            # e.g. cr6606, tr3000 (profiles in the repo)
 WRT_CONFIG="${WRT_CONFIG:-}"               # optional absolute/relative path to a custom .config
+BUILD_THREADS="${BUILD_THREADS:-4}"        # number of parallel make jobs (default 4)
 
 # Clone repo with submodules (optionally skip any network with SKIP_GIT_FETCH=1)
 if [ ! -d immortalwrt-firmware-builder/.git ]; then
@@ -68,11 +69,11 @@ else
   cp -f "$SEED_PATH" immortalwrt-firmware-builder/immortalwrt/.config
 fi
 
-"$CONTAINER_CMD" exec --env LANG=C.UTF-8,LC_ALL=C.UTF-8,LANGUAGE=en_US:en ./immortalwrt-build-env-ubuntu2204.sif bash -lc '
+"$CONTAINER_CMD" exec --env LANG=C.UTF-8,LC_ALL=C.UTF-8,LANGUAGE=en_US:en,BUILD_THREADS=${BUILD_THREADS} ./immortalwrt-build-env-ubuntu2204.sif bash -lc '
   set -euo pipefail
   cd immortalwrt-firmware-builder/immortalwrt
   ./scripts/feeds update -a
   ./scripts/feeds install -a
   make defconfig
-  make -j${SLURM_CPUS_PER_TASK:-$(nproc)}
+  make -j${BUILD_THREADS}
 '
