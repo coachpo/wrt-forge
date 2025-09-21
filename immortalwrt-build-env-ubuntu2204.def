@@ -14,6 +14,90 @@ From: ubuntu:22.04
     apt-get clean
     rm -rf /var/lib/apt/lists/*
 
+    # Embed firmware builder source (frozen at build time)
+    GIT_REF="${GIT_REF:-main}"
+    GIT_DEPTH="${GIT_DEPTH:-1}"
+    mkdir -p /opt
+    git clone --recursive --depth "${GIT_DEPTH}" --branch "${GIT_REF}" \
+      https://github.com/coachpo/immortalwrt-firmware-builder.git /opt/immortalwrt-firmware-builder
+
+    # Install internal build helper that copies sources to a writable work dir and builds
+    cat > /usr/local/bin/wrtforge-build <<'EOF'
+#!/bin/bash
+set -euo pipefail
+
+# Parameters via env:
+#   WRT_SEED       seed profile name (default: cr6606)
+#   WRT_CONFIG     path to custom .config (inside container OR bound work dir)
+#   WRT_FETCH      if "1", fetch latest from origin before building (default: 0)
+#   WORK_DIR       host-bound work directory (default: /work)
+
+WORK_DIR="${WORK_DIR:-/work}"
+SEED_NAME="${WRT_SEED:-cr6606}"
+CUSTOM_CONFIG="${WRT_CONFIG:-}"
+DO_FETCH="${WRT_FETCH:-0}"
+
+if [ ! -d "$WORK_DIR" ]; then
+  echo "WORK_DIR not found: $WORK_DIR. Bind mount your project directory to /work (e.g., --bind \"$(pwd)\":/work)." >&2
+  exit 1
+fi
+
+SRC_DST="$WORK_DIR/immortalwrt-firmware-builder"
+if [ ! -d "$SRC_DST/.git" ]; then
+  echo "Preparing writable working copy under $SRC_DST"
+  rsync -a --delete /opt/immortalwrt-firmware-builder/ "$SRC_DST/"
+fi
+
+cd "$SRC_DST"
+if [ "$DO_FETCH" = "1" ]; then
+  echo "Fetching latest upstream..."
+  git fetch --all --tags
+  # If GIT_REF provided in environment, honor it; otherwise stay on current branch
+  if [ -n "${GIT_REF:-}" ]; then
+    git checkout -B "$GIT_REF" "origin/$GIT_REF" || git checkout "$GIT_REF"
+  fi
+  git submodule update --init --recursive
+fi
+
+CFG_DIR="$SRC_DST/immortalwrt"
+mkdir -p "$CFG_DIR"
+
+if [ -n "$CUSTOM_CONFIG" ]; then
+  if [ -f "$CUSTOM_CONFIG" ]; then
+    echo "Using custom config: $CUSTOM_CONFIG"
+    cp -f "$CUSTOM_CONFIG" "$CFG_DIR/.config"
+  else
+    echo "Custom config not found: $CUSTOM_CONFIG" >&2
+    exit 1
+  fi
+else
+  SEED_PATH="$SRC_DST/${SEED_NAME}/seed.config"
+  if [ ! -f "$SEED_PATH" ]; then
+    echo "Seed config not found: $SEED_PATH (set WRT_SEED or WRT_CONFIG)" >&2
+    exit 1
+  fi
+  echo "Using seed profile: $SEED_NAME -> $SEED_PATH"
+  cp -f "$SEED_PATH" "$CFG_DIR/.config"
+fi
+
+cd "$CFG_DIR"
+./scripts/feeds update -a
+./scripts/feeds install -a
+make defconfig
+
+CPU_COUNT="${SLURM_CPUS_PER_TASK:-$(nproc)}"
+echo "Starting build with -j$CPU_COUNT"
+make -j"$CPU_COUNT"
+
+# Copy artifacts back to host work directory for easy access
+if [ -d "$CFG_DIR/bin" ]; then
+  mkdir -p "$WORK_DIR/bin"
+  rsync -a "$CFG_DIR/bin/" "$WORK_DIR/bin/"
+  echo "Artifacts copied to $WORK_DIR/bin"
+fi
+EOF
+    chmod +x /usr/local/bin/wrtforge-build
+
 %environment
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8

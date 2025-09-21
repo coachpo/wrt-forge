@@ -69,11 +69,15 @@ else
   cp -f "$SEED_PATH" immortalwrt-firmware-builder/immortalwrt/.config
 fi
 
-"$CONTAINER_CMD" exec --env LANG=C.UTF-8,LC_ALL=C.UTF-8,LANGUAGE=en_US:en ./immortalwrt-build-env-ubuntu2204.sif bash -lc '
-  set -euo pipefail
-  cd immortalwrt-firmware-builder/immortalwrt
-  ./scripts/feeds update -a
-  ./scripts/feeds install -a
-  make defconfig
-  make -j${SLURM_CPUS_PER_TASK:-$(nproc)}
-'
+WORK_DIR="$(pwd)"
+echo "Binding work directory: $WORK_DIR -> /work"
+"$CONTAINER_CMD" exec \
+  --bind "$WORK_DIR:/work" \
+  --env LANG=C.UTF-8,LC_ALL=C.UTF-8,LANGUAGE=en_US:en \
+  --env WRT_SEED="${WRT_SEED}" \
+  --env WRT_CONFIG="${WRT_CONFIG}" \
+  --env WRT_FETCH="${WRT_FETCH:-0}" \
+  --env GIT_REF="${GIT_REF}" \
+  --env SLURM_CPUS_PER_TASK="${SLURM_CPUS_PER_TASK:-}" \
+  ./immortalwrt-build-env-ubuntu2204.sif \
+  wrtforge-build
