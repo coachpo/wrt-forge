@@ -49,7 +49,7 @@ else
   cp -f "$SEED_PATH" immortalwrt-firmware-builder/immortalwrt/.config
 fi
 
-apptainer exec ./immortalwrt_ubuntu2204_full.sif bash -lc '
+apptainer exec ./wrtforge-build.sif bash -lc '
   set -euo pipefail
   cd immortalwrt-firmware-builder/immortalwrt
   ./scripts/feeds update -a

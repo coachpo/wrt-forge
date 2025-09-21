@@ -3,8 +3,8 @@
 This README documents how to reproduce the ImmortalWrt firmware build on this cluster using Apptainer inside Slurm allocations. No Docker/Podman is required.
 
 ### Files in this folder
-- `immortalwrt_ubuntu2204_full.def`: Apptainer definition with full Ubuntu build dependencies (msmtp omitted to avoid fakeroot postinst issues)
-- `immortalwrt_ubuntu2204_full.sif`: Built Apptainer image
+- `wrtforge-build.def`: Apptainer definition with full Ubuntu build dependencies (msmtp omitted to avoid fakeroot postinst issues)
+- `wrtforge-build.sif`: Built Apptainer image
 - `build_repo_and_firmware.sbatch`: Slurm batch script that clones the repo (with submodules), prepares config, updates feeds, and runs the build
 - `logs/`: Slurm job output
 
@@ -18,9 +18,9 @@ srun -N1 -t 5 apptainer --version
 ```
 
 ### 1) Build (or rebuild) the Apptainer image
-If you have modified `immortalwrt_ubuntu2204_full.def`, rebuild the SIF on a compute node:
+If you have modified `wrtforge-build.def`, rebuild the SIF on a compute node:
 ```bash
-srun -N1 -t 60 apptainer build ./immortalwrt_ubuntu2204_full.sif ./immortalwrt_ubuntu2204_full.def
+srun -N1 -t 60 apptainer build ./wrtforge-build.sif ./wrtforge-build.def
 ```
 
 ### 2) Submit the firmware build job
@@ -53,7 +53,7 @@ sbatch --export=ALL,OWRT_CONFIG=/absolute/or/relative/path/to/.config /home/lqin
 ```
 - You can run interactive menuconfig inside the container if desired:
 ```bash
-srun --pty -N1 -c 4 -t 60 apptainer exec /home/lqing/containers/immortalwrt_ubuntu2204_full.sif bash -lc 'cd /home/lqing/immortalwrt && make menuconfig'
+srun --pty -N1 -c 4 -t 60 apptainer exec /home/lqing/containers/wrtforge-build.sif bash -lc 'cd /home/lqing/immortalwrt && make menuconfig'
 ```
 
 ### Adjust resources (CPUs, memory, walltime)
