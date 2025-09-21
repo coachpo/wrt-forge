@@ -1,7 +1,6 @@
 #!/bin/bash
 #SBATCH -J iwrt-repo
 #SBATCH -N 1
-#SBATCH --mem=192000
 #SBATCH -t 6:00:00
 #SBATCH -p normal
 #SBATCH -o %x-%j.out

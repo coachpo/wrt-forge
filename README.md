@@ -82,9 +82,7 @@ srun --pty -N1 -c 4 -t 60 apptainer exec ./immortalwrt-build-env-ubuntu2204.sif 
 Edit `immortalwrt-build-task.sbatch` to match your cluster:
 
 ```bash
-#SBATCH -c 80                      # CPU cores
-#SBATCH --mem=192000               # Memory (MB)
-#SBATCH --exclusive                # Exclusive node access
+#SBATCH -N 1                       # 1 Node
 #SBATCH -t 6:00:00                 # Wall time (6 hours)
 ```
 
