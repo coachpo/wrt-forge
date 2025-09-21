@@ -46,50 +46,6 @@ tail -f iwrt-repo-<JOBID>.out      # View live output
 scancel <JOBID>                     # Cancel if needed
 ```
 
-## Slurm Command Reference
-
-- List my jobs
-```bash
-squeue -u $USER
-```
-
-- Show only one job
-```bash
-squeue -j <JOBID>
-```
-
-- Show expected start time (if queued)
-```bash
-squeue --start -j <JOBID>
-```
-
-- Detailed job info (state, resources, reasons)
-```bash
-scontrol show job <JOBID>
-```
-
-- Historical accounting (after job finishes)
-```bash
-sacct -j <JOBID> --format=JobID,JobName%30,State,Elapsed,ExitCode,AllocCPUS,ReqMem,MaxRSS
-```
-
-- Cancel job
-```bash
-scancel <JOBID>
-```
-
-- Follow live output from this repo’s scripts
-```bash
-tail -f iwrt-repo-<JOBID>.out
-```
-
-- Optional: get an interactive shell on a node
-```bash
-salloc -N1 -c 4 -t 60 -p normal
-srun --pty bash
-exit
-```
-
 ### 4. Locate Output
 
 After a successful build, artifacts are copied back to the host under:
