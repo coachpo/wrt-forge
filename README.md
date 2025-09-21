@@ -34,8 +34,6 @@ srun -N1 -t 60 apptainer build ./immortalwrt-build-env-ubuntu2204.sif ./immortal
 
 ### 2. Submit Build Job
 
-The script requests 80 CPUs and 192GB RAM by default:
-
 ```bash
 sbatch ./immortalwrt-build-task.sbatch
 ```
@@ -83,18 +81,16 @@ srun --pty -N1 -c 4 -t 60 apptainer exec --bind "$(pwd):/work" ./immortalwrt-bui
 Edit `immortalwrt-build-task.sbatch` to match your cluster:
 
 ```bash
-#SBATCH -c 80                      # CPU cores
-#SBATCH --mem=192000               # Memory (MB)
-#SBATCH -t 6:00:00                 # Wall time (6 hours)
+#SBATCH -J iwrt-repo              # Job name
+#SBATCH -N 1                      # Number of nodes
+#SBATCH --mem=192000              # Memory in MB (192 GB)
+#SBATCH -t 6:00:00                # Time limit (6 hours)
+#SBATCH -p normal                 # Partition/queue name
+#SBATCH -o %x-%j.out              # Standard output file (%x=job name, %j=job ID)
+#SBATCH -e %x-%j.err              # Standard error file
 ```
 
 ## Cluster Specifications
-
-**CPU Topology:** 2 sockets × 20 cores/socket × 2 threads/core = 80 logical CPUs
-
-**Memory per Node:**
-- di1–di36: 192,000 MB (≈187.5 GiB)
-- di37–di38: 384,000 MB (≈375.0 GiB)
 
 **Check available resources:**
 ```bash
