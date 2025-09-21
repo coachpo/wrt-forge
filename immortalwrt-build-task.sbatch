@@ -4,7 +4,8 @@
 #SBATCH -c 80
 #SBATCH --mem=192000
 #SBATCH --exclusive
-#SBATCH -t 12:00:00
+#SBATCH -t 6:00:00
+#SBATCH -p normal
 #SBATCH -o logs/%x-%j.out
 #SBATCH -e logs/%x-%j.err
 
