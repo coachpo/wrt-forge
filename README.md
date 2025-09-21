@@ -5,7 +5,7 @@ This README documents how to reproduce the ImmortalWrt firmware build on this cl
 ### Files in this folder
 - `immortalwrt-build-env-ubuntu2204.def`: Apptainer definition with full Ubuntu build dependencies (msmtp omitted to avoid fakeroot postinst issues)
 - `immortalwrt-build-env-ubuntu2204.sif`: Built Apptainer image
-- `immortalwrt-firmware-build.sbatch`: Slurm batch script that clones the repo (with submodules), prepares config, updates feeds, and runs the build
+- `immortalwrt-build-task.sbatch`: Slurm batch script that clones the repo (with submodules), prepares config, updates feeds, and runs the build
 - `logs/`: Slurm job output
 
 ### Prerequisites
@@ -26,7 +26,7 @@ srun -N1 -t 60 apptainer build ./immortalwrt-build-env-ubuntu2204.sif ./immortal
 ### 2) Submit the firmware build job
 By default, the batch script requests what a typical node on this cluster can provide (80 CPUs, 192000 MB, exclusive). Adjust to your needs/quotas. It clones the repo with submodules, selects a seed (default: `cr6606`), updates feeds, and builds.
 ```bash
-sbatch /home/lqing/containers/immortalwrt-firmware-build.sbatch
+sbatch /home/lqing/containers/immortalwrt-build-task.sbatch
 ```
 
 ### 3) Monitor, view logs, cancel
@@ -46,10 +46,10 @@ immortalwrt/bin/targets/<target>/<subtarget>/
 - The job uses the `cr6606` seed by default. You can choose another profile (e.g., `tr3000`) or provide a custom `.config` via environment variables when submitting:
 ```bash
 # Use another seed profile from the repo (e.g., tr3000)
-sbatch --export=ALL,OWRT_SEED=tr3000 /home/lqing/containers/immortalwrt-firmware-build.sbatch
+sbatch --export=ALL,OWRT_SEED=tr3000 /home/lqing/containers/immortalwrt-build-task.sbatch
 
 # Use a custom .config file
-sbatch --export=ALL,OWRT_CONFIG=/absolute/or/relative/path/to/.config /home/lqing/containers/immortalwrt-firmware-build.sbatch
+sbatch --export=ALL,OWRT_CONFIG=/absolute/or/relative/path/to/.config /home/lqing/containers/immortalwrt-build-task.sbatch
 ```
 - You can run interactive menuconfig inside the container if desired:
 ```bash
@@ -81,7 +81,7 @@ scontrol show nodes | awk -v EQ='=' '/NodeName=/{for(i=1;i<=NF;i++) if($i ~ /^No
 ### Re-run the same build
 If you want to re-run with the same settings:
 ```bash
-sbatch /home/lqing/containers/immortalwrt-firmware-build.sbatch
+sbatch /home/lqing/containers/immortalwrt-build-task.sbatch
 ```
 
 ### Notes and troubleshooting
