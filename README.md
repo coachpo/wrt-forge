@@ -85,7 +85,7 @@ Edit `immortalwrt-build-task.sbatch` to match your cluster:
 #SBATCH -c 80                      # CPU cores
 #SBATCH --mem=192000               # Memory (MB)
 #SBATCH --exclusive                # Exclusive node access
-#SBATCH -t 1-00:00:00              # Wall time (1 day)
+#SBATCH -t 6:00:00                 # Wall time (6 hours)
 ```
 
 ## Cluster Specifications
