@@ -18,8 +18,8 @@ mkdir -p logs
 # Config: which git ref (branch/tag) to use; shallow clone depth for compiling only
 GIT_REF="${GIT_REF:-main}"
 GIT_DEPTH="${GIT_DEPTH:-1}"
-OWRT_SEED="${OWRT_SEED:-cr6606}"            # e.g. cr6606, tr3000 (profiles in the repo)
-OWRT_CONFIG="${OWRT_CONFIG:-}"               # optional absolute/relative path to a custom .config
+WRT_SEED="${WRT_SEED:-cr6606}"            # e.g. cr6606, tr3000 (profiles in the repo)
+WRT_CONFIG="${WRT_CONFIG:-}"               # optional absolute/relative path to a custom .config
 
 # Clone repo with submodules
 if [ ! -d immortalwrt-firmware-builder/.git ]; then
@@ -32,24 +32,24 @@ else
 fi
 
 # Resolve build configuration (.config)
-if [ -n "$OWRT_CONFIG" ]; then
-  if [ ! -f "$OWRT_CONFIG" ]; then
-    echo "OWRT_CONFIG not found: $OWRT_CONFIG" >&2
+if [ -n "$WRT_CONFIG" ]; then
+  if [ ! -f "$WRT_CONFIG" ]; then
+    echo "WRT_CONFIG not found: $WRT_CONFIG" >&2
     exit 1
   fi
-  echo "Using custom config: $OWRT_CONFIG"
-  cp -f "$OWRT_CONFIG" immortalwrt-firmware-builder/immortalwrt/.config
+  echo "Using custom config: $WRT_CONFIG"
+  cp -f "$WRT_CONFIG" immortalwrt-firmware-builder/immortalwrt/.config
 else
-  SEED_PATH="immortalwrt-firmware-builder/${OWRT_SEED}/seed.config"
+  SEED_PATH="immortalwrt-firmware-builder/${WRT_SEED}/seed.config"
   if [ ! -f "$SEED_PATH" ]; then
-    echo "Seed config not found: $SEED_PATH (set OWRT_SEED or OWRT_CONFIG)" >&2
+    echo "Seed config not found: $SEED_PATH (set WRT_SEED or WRT_CONFIG)" >&2
     exit 1
   fi
-  echo "Using seed profile: ${OWRT_SEED} -> $SEED_PATH"
+  echo "Using seed profile: ${WRT_SEED} -> $SEED_PATH"
   cp -f "$SEED_PATH" immortalwrt-firmware-builder/immortalwrt/.config
 fi
 
-apptainer exec ./wrtforge-build.sif bash -lc '
+apptainer exec ./immortalwrt-build-env-ubuntu2204.sif bash -lc '
   set -euo pipefail
   cd immortalwrt-firmware-builder/immortalwrt
   ./scripts/feeds update -a

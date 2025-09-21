@@ -1,10 +1,10 @@
-### ImmortalWrt firmware build on Slurm with Apptainer
+### WrtForge: ImmortalWrt firmware build on Slurm with Apptainer
 
 This README documents how to reproduce the ImmortalWrt firmware build on this cluster using Apptainer inside Slurm allocations. No Docker/Podman is required.
 
 ### Files in this folder
-- `wrtforge-build.def`: Apptainer definition with full Ubuntu build dependencies (msmtp omitted to avoid fakeroot postinst issues)
-- `wrtforge-build.sif`: Built Apptainer image
+- `immortalwrt-build-env-ubuntu2204.def`: Apptainer definition with full Ubuntu build dependencies (msmtp omitted to avoid fakeroot postinst issues)
+- `immortalwrt-build-env-ubuntu2204.sif`: Built Apptainer image
 - `build_repo_and_firmware.sbatch`: Slurm batch script that clones the repo (with submodules), prepares config, updates feeds, and runs the build
 - `logs/`: Slurm job output
 
@@ -18,9 +18,9 @@ srun -N1 -t 5 apptainer --version
 ```
 
 ### 1) Build (or rebuild) the Apptainer image
-If you have modified `wrtforge-build.def`, rebuild the SIF on a compute node:
+If you have modified `immortalwrt-build-env-ubuntu2204.def`, rebuild the SIF on a compute node:
 ```bash
-srun -N1 -t 60 apptainer build ./wrtforge-build.sif ./wrtforge-build.def
+srun -N1 -t 60 apptainer build ./immortalwrt-build-env-ubuntu2204.sif ./immortalwrt-build-env-ubuntu2204.def
 ```
 
 ### 2) Submit the firmware build job
@@ -53,7 +53,7 @@ sbatch --export=ALL,OWRT_CONFIG=/absolute/or/relative/path/to/.config /home/lqin
 ```
 - You can run interactive menuconfig inside the container if desired:
 ```bash
-srun --pty -N1 -c 4 -t 60 apptainer exec /home/lqing/containers/wrtforge-build.sif bash -lc 'cd /home/lqing/immortalwrt && make menuconfig'
+srun --pty -N1 -c 4 -t 60 apptainer exec /home/lqing/containers/immortalwrt-build-env-ubuntu2204.sif bash -lc 'cd /home/lqing/immortalwrt && make menuconfig'
 ```
 
 ### Adjust resources (CPUs, memory, walltime)
@@ -93,3 +93,5 @@ sbatch /home/lqing/containers/build_repo_and_firmware.sbatch
 - ImmortalWrt Firmware Builder: [coachpo/immortalwrt-firmware-builder](https://github.com/coachpo/immortalwrt-firmware-builder)
 
 
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
