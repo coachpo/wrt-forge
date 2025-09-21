@@ -4,12 +4,13 @@
 
 This repository provides a complete solution for building ImmortalWrt firmware using Apptainer containers on Slurm clusters. No Docker/Podman required.
 
+The container image embeds the firmware builder source. The build runs fully inside the container and copies artifacts back to the host working directory.
+
 ## Project Files
 
-- `immortalwrt-build-env-ubuntu2204.def` - Apptainer definition with full Ubuntu build dependencies
+- `immortalwrt-build-env-ubuntu2204.def` - Apptainer definition with full Ubuntu build dependencies and embedded sources
 - `immortalwrt-build-env-ubuntu2204.sif` - Built Apptainer image (generated)
 - `immortalwrt-build-task.sbatch` - Slurm batch script for automated builds
-- `logs/` - Slurm job output directory (created automatically)
 
 ## Prerequisites
 
@@ -33,7 +34,7 @@ srun -N1 -t 60 apptainer build ./immortalwrt-build-env-ubuntu2204.sif ./immortal
 
 ### 2. Submit Build Job
 
-The script requests 80 CPUs, 192GB RAM, and exclusive node access by default:
+The script requests 80 CPUs and 192GB RAM by default:
 
 ```bash
 sbatch ./immortalwrt-build-task.sbatch
@@ -49,10 +50,10 @@ scancel <JOBID>                     # Cancel if needed
 
 ### 4. Locate Output
 
-After successful build, firmware images are available at:
+After a successful build, artifacts are copied back to the host under:
 
 ```
-immortalwrt-firmware-builder/immortalwrt/bin/targets/<target>/<subtarget>/
+bin/targets/<target>/<subtarget>/
 ```
 
 ## Configuration Options
@@ -71,10 +72,10 @@ sbatch --export=ALL,WRT_CONFIG=/path/to/.config ./immortalwrt-build-task.sbatch
 
 ### Interactive Configuration
 
-Run menuconfig inside the container:
+Run menuconfig inside the container (bind the repo to /work):
 
 ```bash
-srun --pty -N1 -c 4 -t 60 apptainer exec ./immortalwrt-build-env-ubuntu2204.sif bash -lc 'cd immortalwrt-firmware-builder/immortalwrt && make menuconfig'
+srun --pty -N1 -c 4 -t 60 apptainer exec --bind "$(pwd):/work" ./immortalwrt-build-env-ubuntu2204.sif bash -lc 'cd /work/immortalwrt-firmware-builder/immortalwrt && make menuconfig'
 ```
 
 ### Adjust Resources
@@ -84,7 +85,6 @@ Edit `immortalwrt-build-task.sbatch` to match your cluster:
 ```bash
 #SBATCH -c 80                      # CPU cores
 #SBATCH --mem=192000               # Memory (MB)
-#SBATCH --exclusive                # Exclusive node access
 #SBATCH -t 6:00:00                 # Wall time (6 hours)
 ```
 
@@ -114,7 +114,8 @@ sbatch ./immortalwrt-build-task.sbatch
 
 - **Dependencies:** Full dependency set installed in container - no host packages required
 - **msmtp:** Excluded due to fakeroot issues in this environment
-- **Git Updates:** Script automatically re-fetches and updates submodules on subsequent runs
+- **Embedded sources:** The image includes the builder repo. To fetch latest upstream at runtime, set `WRT_FETCH=1` (optionally with `GIT_REF`)
+- **Logs:** Slurm writes `%x-%j.out` and `%x-%j.err` to the current working directory
 - **Local Testing:** Can run without Slurm using `bash ./immortalwrt-build-task.sbatch`
 
 ## Source Repository
