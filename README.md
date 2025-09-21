@@ -1,98 +1,128 @@
-### WrtForge: ImmortalWrt firmware build on Slurm with Apptainer
+# WrtForge
 
-This README documents how to reproduce the ImmortalWrt firmware build on this cluster using Apptainer inside Slurm allocations. No Docker/Podman is required.
+**ImmortalWrt firmware build on Slurm with Apptainer**
 
-### Files in this folder
-- `immortalwrt-build-env-ubuntu2204.def`: Apptainer definition with full Ubuntu build dependencies (msmtp omitted to avoid fakeroot postinst issues)
-- `immortalwrt-build-env-ubuntu2204.sif`: Built Apptainer image
-- `immortalwrt-build-task.sbatch`: Slurm batch script that clones the repo (with submodules), prepares config, updates feeds, and runs the build
-- `logs/`: Slurm job output
+This repository provides a complete solution for building ImmortalWrt firmware using Apptainer containers on Slurm clusters. No Docker/Podman required.
 
-### Prerequisites
+## 📁 Project Files
+
+- `immortalwrt-build-env-ubuntu2204.def` - Apptainer definition with full Ubuntu build dependencies
+- `immortalwrt-build-env-ubuntu2204.sif` - Built Apptainer image (generated)
+- `immortalwrt-build-task.sbatch` - Slurm batch script for automated builds
+- `logs/` - Slurm job output directory (created automatically)
+
+## 🔧 Prerequisites
+
 - Slurm available (`srun`, `sbatch`)
 - Apptainer available on compute nodes
 
-Validate Apptainer on a compute node:
+**Validate Apptainer:**
 ```bash
 srun -N1 -t 5 apptainer --version
 ```
 
-### 1) Build (or rebuild) the Apptainer image
-If you have modified `immortalwrt-build-env-ubuntu2204.def`, rebuild the SIF on a compute node:
+## 🚀 Quick Start
+
+### 1. Build the Apptainer Image
+
+If you've modified the definition file, rebuild the container:
+
 ```bash
 srun -N1 -t 60 apptainer build ./immortalwrt-build-env-ubuntu2204.sif ./immortalwrt-build-env-ubuntu2204.def
 ```
 
-### 2) Submit the firmware build job
-By default, the batch script requests what a typical node on this cluster can provide (80 CPUs, 192000 MB, exclusive). Adjust to your needs/quotas. It clones the repo with submodules, selects a seed (default: `cr6606`), updates feeds, and builds.
+### 2. Submit Build Job
+
+The script requests 80 CPUs, 192GB RAM, and exclusive node access by default:
+
 ```bash
 sbatch ./immortalwrt-build-task.sbatch
 ```
 
-### 3) Monitor, view logs, cancel
+### 3. Monitor Progress
+
 ```bash
-squeue -u $USER                 # or: squeue -j <JOBID>
-tail -f logs/iwrt-repo-<JOBID>.out
-scancel <JOBID>
+squeue -u $USER                    # Check job status
+tail -f iwrt-repo-<JOBID>.out      # View live output
+scancel <JOBID>                     # Cancel if needed
 ```
 
-### 4) Output location
-After success, firmware images appear under:
+### 4. Locate Output
+
+After successful build, firmware images are available at:
+
 ```
-immortalwrt/bin/targets/<target>/<subtarget>/
+immortalwrt-firmware-builder/immortalwrt/bin/targets/<target>/<subtarget>/
 ```
 
-### Change target/seed config
-- The job uses the `cr6606` seed by default. You can choose another profile (e.g., `tr3000`) or provide a custom `.config` via environment variables when submitting:
+## ⚙️ Configuration Options
+
+### Change Target Device
+
+**Use different seed profile:**
 ```bash
-# Use another seed profile from the repo (e.g., tr3000)
 sbatch --export=ALL,WRT_SEED=tr3000 ./immortalwrt-build-task.sbatch
-
-# Use a custom .config file
-sbatch --export=ALL,WRT_CONFIG=/absolute/or/relative/path/to/.config ./immortalwrt-build-task.sbatch
 ```
-- You can run interactive menuconfig inside the container if desired:
+
+**Use custom config file:**
+```bash
+sbatch --export=ALL,WRT_CONFIG=/path/to/.config ./immortalwrt-build-task.sbatch
+```
+
+### Interactive Configuration
+
+Run menuconfig inside the container:
+
 ```bash
 srun --pty -N1 -c 4 -t 60 apptainer exec ./immortalwrt-build-env-ubuntu2204.sif bash -lc 'cd immortalwrt-firmware-builder/immortalwrt && make menuconfig'
 ```
 
-### Adjust resources (CPUs, memory, walltime)
-Edit `build_repo_and_firmware.sbatch` as needed. Example below matches a typical node here; lower or raise per your requirements:
+### Adjust Resources
+
+Edit `immortalwrt-build-task.sbatch` to match your cluster:
+
 ```bash
-#SBATCH -c 80
-#SBATCH --mem=192000
-#SBATCH --exclusive
-#SBATCH -t 1-00:00:00   # example: 1 day
+#SBATCH -c 80                      # CPU cores
+#SBATCH --mem=192000               # Memory (MB)
+#SBATCH --exclusive                # Exclusive node access
+#SBATCH -t 1-00:00:00              # Wall time (1 day)
 ```
-Inside the script, `make` uses the CPUs requested via `SLURM_CPUS_PER_TASK`.
 
-### Cluster example (this supercomputer)
-- CPU topology per node: 2 sockets × 20 cores/socket × 2 threads/core ⇒ 40 physical cores, 80 logical CPUs.
-- Memory per node:
-  - di1–di36: 192000 MB (≈187.5 GiB)
-  - di37–di38: 384000 MB (≈375.0 GiB)
+## 🖥️ Cluster Specifications
 
-Inspect resources yourself:
+**CPU Topology:** 2 sockets × 20 cores/socket × 2 threads/core = 80 logical CPUs
+
+**Memory per Node:**
+- di1–di36: 192,000 MB (≈187.5 GiB)
+- di37–di38: 384,000 MB (≈375.0 GiB)
+
+**Check available resources:**
 ```bash
 sinfo -h -N -o '%N %m'
 scontrol show nodes | awk -v EQ='=' '/NodeName=/{for(i=1;i<=NF;i++) if($i ~ /^NodeName=/){split($i,a,EQ);n=a[2]}} /RealMemory=/{for(i=1;i<=NF;i++) if($i ~ /^RealMemory=/){split($i,a,EQ);m=a[2]; printf("%s %s MB (%.1f GiB)\n", n, m, m/1024)}}'
 ```
 
-### Re-run the same build
-If you want to re-run with the same settings:
+## 🔄 Re-running Builds
+
+To rebuild with the same settings:
+
 ```bash
 sbatch ./immortalwrt-build-task.sbatch
 ```
 
-### Notes and troubleshooting
-- The image installs a full dependency set inside the container. No host packages are needed.
-- `msmtp` is excluded due to group creation failing under fakeroot in this environment. If you need it, consider installing at runtime with a writable overlay or enabling setuid/fakeroot support site-wide.
-- If `git` or submodules in the repo move, the batch script will re-fetch and re-init submodules on subsequent runs.
+## 📝 Notes & Troubleshooting
 
-### Source repo (with seeds and submodule)
-- ImmortalWrt Firmware Builder: [coachpo/immortalwrt-firmware-builder](https://github.com/coachpo/immortalwrt-firmware-builder)
+- **Dependencies:** Full dependency set installed in container - no host packages required
+- **msmtp:** Excluded due to fakeroot issues in this environment
+- **Git Updates:** Script automatically re-fetches and updates submodules on subsequent runs
+- **Local Testing:** Can run without Slurm using `bash ./immortalwrt-build-task.sbatch`
 
+## 🔗 Source Repository
 
-## License
+**ImmortalWrt Firmware Builder:** [coachpo/immortalwrt-firmware-builder](https://github.com/coachpo/immortalwrt-firmware-builder)
+
+---
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
