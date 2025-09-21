@@ -83,7 +83,6 @@ Edit `immortalwrt-build-task.sbatch` to match your cluster:
 ```bash
 #SBATCH -J iwrt-repo              # Job name
 #SBATCH -N 1                      # Number of nodes
-#SBATCH --mem=192000              # Memory in MB (192 GB)
 #SBATCH -t 6:00:00                # Time limit (6 hours)
 #SBATCH -p normal                 # Partition/queue name
 #SBATCH -o %x-%j.out              # Standard output file (%x=job name, %j=job ID)
