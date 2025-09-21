@@ -1,13 +1,9 @@
 #!/bin/bash
 #SBATCH -J iwrt-repo
 #SBATCH -N 1
-#SBATCH -c 80
 #SBATCH --mem=192000
-#SBATCH --exclusive
 #SBATCH -t 6:00:00
 #SBATCH -p normal
-# Write logs to CWD so directory always exists
-# (Slurm cannot create directories for output paths.)
 #SBATCH -o %x-%j.out
 #SBATCH -e %x-%j.err
 
