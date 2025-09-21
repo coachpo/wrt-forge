@@ -26,7 +26,7 @@ srun -N1 -t 60 apptainer build ./immortalwrt-build-env-ubuntu2204.sif ./immortal
 ### 2) Submit the firmware build job
 By default, the batch script requests what a typical node on this cluster can provide (80 CPUs, 192000 MB, exclusive). Adjust to your needs/quotas. It clones the repo with submodules, selects a seed (default: `cr6606`), updates feeds, and builds.
 ```bash
-sbatch /home/lqing/containers/immortalwrt-build-task.sbatch
+sbatch ./immortalwrt-build-task.sbatch
 ```
 
 ### 3) Monitor, view logs, cancel
@@ -46,14 +46,14 @@ immortalwrt/bin/targets/<target>/<subtarget>/
 - The job uses the `cr6606` seed by default. You can choose another profile (e.g., `tr3000`) or provide a custom `.config` via environment variables when submitting:
 ```bash
 # Use another seed profile from the repo (e.g., tr3000)
-sbatch --export=ALL,OWRT_SEED=tr3000 /home/lqing/containers/immortalwrt-build-task.sbatch
+sbatch --export=ALL,WRT_SEED=tr3000 ./immortalwrt-build-task.sbatch
 
 # Use a custom .config file
-sbatch --export=ALL,OWRT_CONFIG=/absolute/or/relative/path/to/.config /home/lqing/containers/immortalwrt-build-task.sbatch
+sbatch --export=ALL,WRT_CONFIG=/absolute/or/relative/path/to/.config ./immortalwrt-build-task.sbatch
 ```
 - You can run interactive menuconfig inside the container if desired:
 ```bash
-srun --pty -N1 -c 4 -t 60 apptainer exec /home/lqing/containers/immortalwrt-build-env-ubuntu2204.sif bash -lc 'cd /home/lqing/immortalwrt && make menuconfig'
+srun --pty -N1 -c 4 -t 60 apptainer exec ./immortalwrt-build-env-ubuntu2204.sif bash -lc 'cd immortalwrt-firmware-builder/immortalwrt && make menuconfig'
 ```
 
 ### Adjust resources (CPUs, memory, walltime)
@@ -81,7 +81,7 @@ scontrol show nodes | awk -v EQ='=' '/NodeName=/{for(i=1;i<=NF;i++) if($i ~ /^No
 ### Re-run the same build
 If you want to re-run with the same settings:
 ```bash
-sbatch /home/lqing/containers/immortalwrt-build-task.sbatch
+sbatch ./immortalwrt-build-task.sbatch
 ```
 
 ### Notes and troubleshooting
