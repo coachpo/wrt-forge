@@ -4,14 +4,14 @@
 
 This repository provides a complete solution for building ImmortalWrt firmware using Apptainer containers on Slurm clusters. No Docker/Podman required.
 
-## 📁 Project Files
+## Project Files
 
 - `immortalwrt-build-env-ubuntu2204.def` - Apptainer definition with full Ubuntu build dependencies
 - `immortalwrt-build-env-ubuntu2204.sif` - Built Apptainer image (generated)
 - `immortalwrt-build-task.sbatch` - Slurm batch script for automated builds
 - `logs/` - Slurm job output directory (created automatically)
 
-## 🔧 Prerequisites
+## Prerequisites
 
 - Slurm available (`srun`, `sbatch`)
 - Apptainer available on compute nodes
@@ -21,7 +21,7 @@ This repository provides a complete solution for building ImmortalWrt firmware u
 srun -N1 -t 5 apptainer --version
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Build the Apptainer Image
 
@@ -55,7 +55,7 @@ After successful build, firmware images are available at:
 immortalwrt-firmware-builder/immortalwrt/bin/targets/<target>/<subtarget>/
 ```
 
-## ⚙️ Configuration Options
+## Configuration Options
 
 ### Change Target Device
 
@@ -88,7 +88,7 @@ Edit `immortalwrt-build-task.sbatch` to match your cluster:
 #SBATCH -t 1-00:00:00              # Wall time (1 day)
 ```
 
-## 🖥️ Cluster Specifications
+## Cluster Specifications
 
 **CPU Topology:** 2 sockets × 20 cores/socket × 2 threads/core = 80 logical CPUs
 
@@ -102,7 +102,7 @@ sinfo -h -N -o '%N %m'
 scontrol show nodes | awk -v EQ='=' '/NodeName=/{for(i=1;i<=NF;i++) if($i ~ /^NodeName=/){split($i,a,EQ);n=a[2]}} /RealMemory=/{for(i=1;i<=NF;i++) if($i ~ /^RealMemory=/){split($i,a,EQ);m=a[2]; printf("%s %s MB (%.1f GiB)\n", n, m, m/1024)}}'
 ```
 
-## 🔄 Re-running Builds
+## Re-running Builds
 
 To rebuild with the same settings:
 
@@ -110,19 +110,19 @@ To rebuild with the same settings:
 sbatch ./immortalwrt-build-task.sbatch
 ```
 
-## 📝 Notes & Troubleshooting
+## Notes & Troubleshooting
 
 - **Dependencies:** Full dependency set installed in container - no host packages required
 - **msmtp:** Excluded due to fakeroot issues in this environment
 - **Git Updates:** Script automatically re-fetches and updates submodules on subsequent runs
 - **Local Testing:** Can run without Slurm using `bash ./immortalwrt-build-task.sbatch`
 
-## 🔗 Source Repository
+## Source Repository
 
 **ImmortalWrt Firmware Builder:** [coachpo/immortalwrt-firmware-builder](https://github.com/coachpo/immortalwrt-firmware-builder)
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
