@@ -8,12 +8,25 @@
 
 set -euo pipefail
 
+# Config: which git ref (branch/tag) to use; shallow clone depth for compiling only
+GIT_REF="${GIT_REF:-main}"
+GIT_DEPTH="${GIT_DEPTH:-1}"
+WRT_SEED="${WRT_SEED:-cr6606}"             # e.g. cr6606, tr3000 (profiles in the repo)
+WRT_CONFIG="${WRT_CONFIG:-}"               # optional absolute/relative path to a custom .config
+BUILD_THREADS="${BUILD_THREADS:-4}"        # number of parallel make jobs (default 4)
+
+
 # Ensure we operate relative to the directory where the job was submitted
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 
 # Print basic context for debugging
 echo "Hostname: $(hostname)"
 echo "Date: $(date)"
+echo "Build threads: ${BUILD_THREADS}"
+echo "Git ref: ${GIT_REF}"
+echo "Git depth: ${GIT_DEPTH}"
+echo "Seed: ${WRT_SEED}"
+echo "Config: ${WRT_CONFIG}"
 
 # Detect container runtime (Apptainer or Singularity)
 CONTAINER_CMD="${CONTAINER_CMD:-}"
@@ -27,13 +40,6 @@ if [ -z "$CONTAINER_CMD" ]; then
     exit 1
   fi
 fi
-
-# Config: which git ref (branch/tag) to use; shallow clone depth for compiling only
-GIT_REF="${GIT_REF:-main}"
-GIT_DEPTH="${GIT_DEPTH:-1}"
-WRT_SEED="${WRT_SEED:-cr6606}"             # e.g. cr6606, tr3000 (profiles in the repo)
-WRT_CONFIG="${WRT_CONFIG:-}"               # optional absolute/relative path to a custom .config
-BUILD_THREADS="${BUILD_THREADS:-4}"        # number of parallel make jobs (default 4)
 
 # Clone repo with submodules (optionally skip any network with SKIP_GIT_FETCH=1)
 if [ ! -d immortalwrt-firmware-builder/.git ]; then
