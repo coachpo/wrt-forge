@@ -13,7 +13,7 @@ GIT_REF="${GIT_REF:-main}"
 GIT_DEPTH="${GIT_DEPTH:-1}"
 WRT_SEED="${WRT_SEED:-cr6606}"             # e.g. cr6606, tr3000 (profiles in the repo)
 WRT_CONFIG="${WRT_CONFIG:-}"               # optional absolute/relative path to a custom .config
-BUILD_THREADS="${BUILD_THREADS:-$(nproc)}" # number of parallel make jobs (default: detected via nproc)
+BUILD_THREADS="${BUILD_THREADS:-4}"        # number of parallel make jobs (default 4)
 
 
 # Ensure we operate relative to the directory where the job was submitted

@@ -73,7 +73,7 @@ sbatch --export=ALL,WRT_CONFIG=/path/to/.config ./immortalwrt-build-task.sbatch
 
 ### Set Build Threads
 
-By default, the build uses all available CPUs as reported by `nproc`:
+By default the build uses 4 threads:
 
 ```bash
 sbatch ./immortalwrt-build-task.sbatch
@@ -88,6 +88,12 @@ sbatch --export=ALL,BUILD_THREADS=12 ./immortalwrt-build-task.sbatch
 ```
 
 This controls the parallelism of the build (`make -j${BUILD_THREADS}` inside the container).
+
+Example to use all available CPUs (via `nproc`):
+
+```bash
+sbatch --export=ALL,BUILD_THREADS=$(nproc) ./immortalwrt-build-task.sbatch
+```
 
 ### Git Options
 
