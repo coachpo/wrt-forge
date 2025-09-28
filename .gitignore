@@ -18,3 +18,5 @@ immortalwrt/dl/
 .Trashes
 ehthumbs.db
 Thumbs.db
+.idea/
+.vscode/
