@@ -85,13 +85,7 @@ Override the number of threads with `BUILD_THREADS`:
 BUILD_THREADS=12 sbatch ./immortalwrt-build-task.sbatch
 # or equivalently
 sbatch --export=ALL,BUILD_THREADS=12 ./immortalwrt-build-task.sbatch
-```
-
-This controls the parallelism of the build (`make -j${BUILD_THREADS}` inside the container).
-
-Example to use all available CPUs (via `nproc`):
-
-```bash
+# Example to use all avaiable CPUs
 sbatch --export=ALL,BUILD_THREADS=$(nproc) ./immortalwrt-build-task.sbatch
 ```
 
@@ -102,17 +96,9 @@ sbatch --export=ALL,BUILD_THREADS=$(nproc) ./immortalwrt-build-task.sbatch
 - `SKIP_GIT_FETCH=1` — reuse existing checkout without network fetch/update
 
 ```bash
-sbatch --export=ALL,GIT_REF=v24.10,GIT_DEPTH=1 ./immortalwrt-build-task.sbatch
+sbatch --export=ALL,GIT_REF=v24.10.2,GIT_DEPTH=1 ./immortalwrt-build-task.sbatch
 # Offline rebuild using existing checkout
 sbatch --export=ALL,SKIP_GIT_FETCH=1 ./immortalwrt-build-task.sbatch
-```
-
-### Interactive Configuration
-
-Run menuconfig inside the container:
-
-```bash
-srun --pty -N1 -c 4 -t 60 apptainer exec ./immortalwrt-build-env-ubuntu2204.sif bash -lc 'cd immortalwrt-firmware-builder/immortalwrt && make menuconfig'
 ```
 
 ### Adjust Resources
@@ -123,36 +109,6 @@ Edit `immortalwrt-build-task.sbatch` to match your cluster:
 #SBATCH -N 1                       # 1 Node
 #SBATCH -t 6:00:00                 # Wall time (6 hours)
 ```
-
-## Cluster Specifications
-
-**CPU Topology:** 2 sockets × 20 cores/socket × 2 threads/core = 80 logical CPUs
-
-**Memory per Node:**
-- di1–di36: 192,000 MB (≈187.5 GiB)
-- di37–di38: 384,000 MB (≈375.0 GiB)
-
-**Check available resources:**
-```bash
-sinfo -h -N -o '%N %m'
-scontrol show nodes | awk -v EQ='=' '/NodeName=/{for(i=1;i<=NF;i++) if($i ~ /^NodeName=/){split($i,a,EQ);n=a[2]}} /RealMemory=/{for(i=1;i<=NF;i++) if($i ~ /^RealMemory=/){split($i,a,EQ);m=a[2]; printf("%s %s MB (%.1f GiB)\n", n, m, m/1024)}}'
-```
-
-## Re-running Builds
-
-To rebuild with the same settings:
-
-```bash
-sbatch ./immortalwrt-build-task.sbatch
-```
-
-## Notes & Troubleshooting
-
-- **Dependencies:** Full dependency set installed in container - no host packages required
-- **Container runtime:** Auto-detects Apptainer or Singularity; override with `CONTAINER_CMD=apptainer` or `CONTAINER_CMD=singularity`
-- **msmtp:** Excluded due to fakeroot issues in this environment
-- **Git Updates:** Script automatically re-fetches and updates submodules on subsequent runs
-- **Local Testing:** Can run without Slurm using `bash ./immortalwrt-build-task.sbatch`
 
 ## Source Repository
 
