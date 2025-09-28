@@ -44,7 +44,7 @@ sbatch ./immortalwrt-build-task.sbatch
 ```bash
 squeue -u $USER                    # Check job status
 tail -f iwrt-repo-<JOBID>.out      # View live output
-scancel <JOBID>                     # Cancel if needed
+scancel <JOBID>                    # Cancel if needed
 ```
 
 ### 4. Locate Output
