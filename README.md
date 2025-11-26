@@ -1,121 +1,83 @@
 # WrtForge
 
-**ImmortalWrt firmware build on Slurm with Apptainer**
+Build ImmortalWrt firmware reproducibly on Slurm using an Apptainer/Singularity image—no Docker/Podman needed. This repo wraps the upstream **coachpo/immortalwrt-firmware-builder** with a container recipe and a Slurm job script so you can submit one job and get firmware artifacts.
 
-This repository provides a complete solution for building ImmortalWrt firmware using Apptainer containers on Slurm clusters. No Docker/Podman required.
+## What’s here
+- `immortalwrt-build-env-ubuntu2204.def` – Apptainer definition (Ubuntu 22.04 + build deps)
+- `immortalwrt-build-env-ubuntu2204.sif` – Built image (generated)
+- `immortalwrt-build-task.sbatch` – Slurm batch script that clones, configures, and builds
+- `iwrt-repo-<JOBID>.out` / `iwrt-repo-<JOBID>.err` – Job logs (generated)
 
-## Project Files
-
-- `immortalwrt-build-env-ubuntu2204.def` - Apptainer definition with full Ubuntu build dependencies
-- `immortalwrt-build-env-ubuntu2204.sif` - Built Apptainer image (generated)
-- `immortalwrt-build-task.sbatch` - Slurm batch script for automated builds
-- `iwrt-repo-<JOBID>.out` and `iwrt-repo-<JOBID>.err` - Slurm job logs (generated in working directory)
-
-## Prerequisites
-
-- Slurm available (`srun`, `sbatch`)
+## Requirements
+- Slurm with `sbatch`, `srun`, `squeue`
 - Apptainer or Singularity available on compute nodes
+- Git + outbound network (unless `SKIP_GIT_FETCH=1`)
 
-**Validate container runtime:**
+Quick runtime check:
 ```bash
 srun -N1 -t 5 apptainer --version || srun -N1 -t 5 singularity --version
 ```
 
-## Quick Start
-
-### 1. Build the Apptainer Image
-
-If you've modified the definition file, rebuild the container:
-
+## Quick start
+1) Build (or rebuild) the container if you changed the `.def` file:
 ```bash
-srun -N1 -t 60 apptainer build ./immortalwrt-build-env-ubuntu2204.sif ./immortalwrt-build-env-ubuntu2204.def
+srun -N1 -t 60 apptainer build immortalwrt-build-env-ubuntu2204.sif immortalwrt-build-env-ubuntu2204.def
 ```
 
-### 2. Submit Build Job
-
-Submit the build job with default settings:
-
+2) Submit the firmware build:
 ```bash
-sbatch ./immortalwrt-build-task.sbatch
+sbatch immortalwrt-build-task.sbatch
 ```
 
-### 3. Monitor Progress
-
+3) Monitor:
 ```bash
-squeue -u $USER                    # Check job status
-tail -f iwrt-repo-<JOBID>.out      # View live output
-scancel <JOBID>                    # Cancel if needed
+squeue -u "$USER"
+tail -f iwrt-repo-<JOBID>.out
+scancel <JOBID>
 ```
 
-### 4. Locate Output
-
-After successful build, firmware images are available at:
-
+4) Find outputs:
 ```
 immortalwrt-firmware-builder/immortalwrt/bin/targets/<target>/<subtarget>/
 ```
 
-## Configuration Options
+## Configuration (env vars)
+Pass overrides with `--export=ALL,<VAR>=...` or by prefixing the command.
 
-### Change Target Device
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `GIT_REF` | `main` | Branch/tag of upstream repo |
+| `GIT_DEPTH` | `1` | Shallow clone depth |
+| `SKIP_GIT_FETCH` | unset | `1` to reuse existing checkout offline |
+| `WRT_SEED` | `cr6606` | Seed profile under `<repo>/<seed>/seed.config` |
+| `WRT_CONFIG` | empty | Path to custom `.config` (overrides seed) |
+| `BUILD_THREADS` | `4` | Parallel `make` jobs |
+| `CONTAINER_CMD` | auto-detect | Force `apptainer` or `singularity` |
 
-Default seed profile: `cr6606`.
-
-**Use different seed profile:**
+Examples:
 ```bash
-sbatch --export=ALL,WRT_SEED=tr3000 ./immortalwrt-build-task.sbatch
+sbatch --export=ALL,WRT_SEED=tr3000 immortalwrt-build-task.sbatch
+sbatch --export=ALL,WRT_CONFIG=$PWD/my.config immortalwrt-build-task.sbatch
+BUILD_THREADS=$(nproc) sbatch immortalwrt-build-task.sbatch
+sbatch --export=ALL,GIT_REF=v24.10.2,GIT_DEPTH=1 immortalwrt-build-task.sbatch
+sbatch --export=ALL,SKIP_GIT_FETCH=1 immortalwrt-build-task.sbatch    # offline rebuild
 ```
 
-**Use custom config file:**
-```bash
-sbatch --export=ALL,WRT_CONFIG=/path/to/.config ./immortalwrt-build-task.sbatch
-```
+To change Slurm resources, edit the directives at the top of `immortalwrt-build-task.sbatch` (nodes, walltime, partition).
 
-### Set Build Threads
+## How it works
+1. The Slurm job clones `coachpo/immortalwrt-firmware-builder` (or reuses local copy).
+2. It copies either `WRT_CONFIG` or the seed config (`<seed>/seed.config`) into `immortalwrt/.config`.
+3. The container executes feeds update/install, `make defconfig`, then `make -j${BUILD_THREADS}` inside `immortalwrt`.
 
-By default the build uses 4 threads:
+## Troubleshooting
+- **Container runtime not found:** set `CONTAINER_CMD=apptainer` or `CONTAINER_CMD=singularity` and ensure it is on `$PATH` on compute nodes.
+- **Seed missing:** pick another `WRT_SEED` or provide `WRT_CONFIG` with an absolute/relative path.
+- **Slow builds:** raise `BUILD_THREADS` to available CPUs; also increase Slurm walltime.
+- **Network-restricted cluster:** use `SKIP_GIT_FETCH=1` after a successful online clone.
 
-```bash
-sbatch ./immortalwrt-build-task.sbatch
-```
-
-Override the number of threads with `BUILD_THREADS`:
-
-```bash
-BUILD_THREADS=12 sbatch ./immortalwrt-build-task.sbatch
-# or equivalently
-sbatch --export=ALL,BUILD_THREADS=12 ./immortalwrt-build-task.sbatch
-# Example to use all avaiable CPUs
-sbatch --export=ALL,BUILD_THREADS=$(nproc) ./immortalwrt-build-task.sbatch
-```
-
-### Git Options
-
-- `GIT_REF` — branch or tag to build from (default: `main`)
-- `GIT_DEPTH` — shallow clone depth (default: `1`)
-- `SKIP_GIT_FETCH=1` — reuse existing checkout without network fetch/update
-
-```bash
-sbatch --export=ALL,GIT_REF=v24.10.2,GIT_DEPTH=1 ./immortalwrt-build-task.sbatch
-# Offline rebuild using existing checkout
-sbatch --export=ALL,SKIP_GIT_FETCH=1 ./immortalwrt-build-task.sbatch
-```
-
-### Adjust Resources
-
-Edit `immortalwrt-build-task.sbatch` to match your cluster:
-
-```bash
-#SBATCH -N 1                       # 1 Node
-#SBATCH -t 6:00:00                 # Wall time (6 hours)
-```
-
-## Source Repository
-
-**ImmortalWrt Firmware Builder:** [coachpo/immortalwrt-firmware-builder](https://github.com/coachpo/immortalwrt-firmware-builder)
-
----
+## Upstream
+ImmortalWrt Firmware Builder: https://github.com/coachpo/immortalwrt-firmware-builder
 
 ## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License – see `LICENSE`.
